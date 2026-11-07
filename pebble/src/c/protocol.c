@@ -188,6 +188,20 @@ void protocol_send_save_task(const char *title, const char *filter) {
     send_message();
 }
 
+bool protocol_send_set_pin_mode(uint8_t mode) {
+    DictionaryIterator *out;
+    AppMessageResult result = app_message_outbox_begin(&out);
+    if (result != APP_MSG_OK) return false;
+
+    dict_write_uint8(out, KEY_MSG_TYPE, MSG_SET_PIN_MODE);
+    dict_write_uint8(out, KEY_TRANSACTION_ID, protocol_next_transaction_id());
+    write_capability(out);
+    dict_write_uint8(out, KEY_PIN_MODE, mode);
+
+    send_message();
+    return true;
+}
+
 static uint32_t safe_uint(Tuple *t) {
     return protocol_tuple_value(t);
 }

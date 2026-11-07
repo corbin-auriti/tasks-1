@@ -127,6 +127,13 @@ object PebbleProtocol {
     const val MSG_GET_TASK_COUNT: Int = 7
     const val MSG_TOGGLE_LIST: Int = 8
 
+    // Timeline pin prefs (watch -> phone)
+    const val MSG_SET_PIN_MODE: Int = 9
+    const val KEY_PIN_MODE = 33
+    const val PIN_MODE_OFF = 0
+    const val PIN_MODE_MOST_DUE = 1
+    const val PIN_MODE_RANDOM = 2
+
     // Phone → Watch response types
     const val RESP_TASKS: Int = 101
     const val RESP_COMPLETE_TASK: Int = 102

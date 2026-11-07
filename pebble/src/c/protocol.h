@@ -57,6 +57,12 @@
 // size, and the phone packs its response chunks to fit a single message
 // (see PROTOCOL_INBOX_SIZE below and PebbleProtocol.kt)
 #define KEY_MAX_MSG_SIZE    32
+#define KEY_PIN_MODE       33
+
+// Timeline pin modes
+#define PIN_MODE_OFF       0
+#define PIN_MODE_MOST_DUE  1
+#define PIN_MODE_RANDOM    2
 
 // Watch -> Phone message types
 #define MSG_GET_TASKS       1
@@ -67,6 +73,10 @@
 #define MSG_SAVE_TASK       6
 #define MSG_GET_TASK_COUNT  7
 #define MSG_TOGGLE_LIST     8
+
+// Timeline pins (phone pushes pins via the Pebble app; the watch only
+// relays the chosen mode)
+#define MSG_SET_PIN_MODE    9
 
 // Phone -> Watch response types
 #define RESP_TASKS          101
@@ -107,6 +117,7 @@
 #define PERSIST_SORT_MODE        11
 #define PERSIST_SHOW_HIDDEN      12
 #define PERSIST_SHOW_COMPLETED   13
+#define PERSIST_PIN_MODE         14
 
 // Configuration
 //
@@ -245,6 +256,7 @@ bool protocol_send_get_lists(int position, int limit);
 bool protocol_send_toggle_list(const char *id, bool collapsed);
 void protocol_send_get_task(uint32_t id_high, uint32_t id_low);
 void protocol_send_save_task(const char *title, const char *filter);
+bool protocol_send_set_pin_mode(uint8_t mode);
 
 // Chunk parsing -- returns number of items parsed
 int protocol_parse_items(DictionaryIterator *iter, UiItem *items, int max_items);

@@ -38,6 +38,7 @@ static int s_group_mode;
 static int s_sort_mode;
 static bool s_show_hidden;
 static bool s_show_completed;
+static int s_pin_mode;
 
 // Formatted row text
 static char s_group_text[40];
@@ -62,6 +63,15 @@ static void save_settings(void) {
     persist_write_int(PERSIST_SORT_MODE, s_sort_mode);
     persist_write_bool(PERSIST_SHOW_HIDDEN, s_show_hidden);
     persist_write_bool(PERSIST_SHOW_COMPLETED, s_show_completed);
+    persist_write_int(PERSIST_PIN_MODE, s_pin_mode);
+}
+
+static const char *pin_mode_label(int mode) {
+    switch (mode) {
+        case PIN_MODE_MOST_DUE: return "Overdue";
+        case PIN_MODE_RANDOM:   return "Random";
+        default:                return "Off";
+    }
 }
 
 static void load_settings(void) {
@@ -79,6 +89,8 @@ static void load_settings(void) {
         ? persist_read_bool(PERSIST_SHOW_HIDDEN) : false;
     s_show_completed = persist_exists(PERSIST_SHOW_COMPLETED)
         ? persist_read_bool(PERSIST_SHOW_COMPLETED) : true;
+    s_pin_mode = persist_exists(PERSIST_PIN_MODE)
+        ? (int)persist_read_int(PERSIST_PIN_MODE) : PIN_MODE_OFF;
 #endif
 }
 
@@ -93,7 +105,7 @@ static void update_labels(void) {
 
 static uint16_t get_num_rows(MenuLayer *menu_layer, uint16_t section_index,
                              void *data) {
-    return 4;
+    return 5;
 }
 
 static int16_t get_cell_height(MenuLayer *menu_layer, MenuIndex *cell_index,
@@ -109,6 +121,12 @@ static void draw_row(GContext *ctx, const Layer *cell_layer,
         case 1: text = s_sort_text; break;
         case 2: text = s_show_hidden ? "Unstarted: On" : "Unstarted: Off"; break;
         case 3: text = s_show_completed ? "Completed: On" : "Completed: Off"; break;
+        case 4: {
+            static char pin_text[24];
+            snprintf(pin_text, sizeof(pin_text), "Pins: %s", pin_mode_label(s_pin_mode));
+            text = pin_text;
+            break;
+        }
     }
     if (text) {
         menu_cell_basic_draw(ctx, cell_layer, text, NULL, NULL);
@@ -135,6 +153,10 @@ static void select_click(MenuLayer *menu_layer, MenuIndex *cell_index,
             break;
         case 3:
             s_show_completed = !s_show_completed;
+            break;
+        case 4:
+            s_pin_mode = (s_pin_mode + 1) % 3;
+            protocol_send_set_pin_mode((uint8_t)s_pin_mode);
             break;
     }
     save_settings();

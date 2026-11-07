@@ -14,6 +14,8 @@ import org.tasks.analytics.Firebase
 import org.tasks.data.count
 import org.tasks.data.dao.TaskDao
 import org.tasks.injection.BaseWorker
+import org.tasks.pebble.PebblePins
+import org.tasks.pebble.PebbleProtocol.PIN_MODE_OFF
 import org.tasks.pebble.PebbleRefresher
 import org.tasks.preferences.DefaultFilterProvider
 import org.tasks.preferences.Preferences
@@ -31,9 +33,14 @@ class ExternalRefreshWork @AssistedInject constructor(
     private val preferences: Preferences,
     private val wearRefresher: WearRefresher,
     private val pebbleRefresher: PebbleRefresher,
+    private val pebblePins: PebblePins,
 ) : BaseWorker(context, workerParams, firebase) {
 
     override suspend fun run(): Result {
+        val pinMode = pebblePins.mode()
+        if (pinMode != PIN_MODE_OFF) {
+            pebblePins.push(pinMode)
+        }
         if (preferences.getBoolean(R.string.p_badges_enabled, true)) {
             val badgeFilter = defaultFilterProvider.getBadgeFilter()
             ShortcutBadger.applyCount(context, taskDao.count(badgeFilter))

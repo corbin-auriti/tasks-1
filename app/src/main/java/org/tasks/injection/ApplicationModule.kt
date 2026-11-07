@@ -80,6 +80,7 @@ import org.tasks.location.Geocoder
 import org.tasks.location.LocationService
 import org.tasks.notifications.Notifier
 import org.tasks.pebble.PebbleMessageHandler
+import org.tasks.pebble.PebblePins
 import org.tasks.pebble.PebbleRefresher
 import org.tasks.pebble.PebbleService
 import org.tasks.preferences.AppPreferences
@@ -802,10 +803,18 @@ class ApplicationModule {
     fun providesPebbleMessageHandler(
         watchServiceLogic: WatchServiceLogic,
         firebase: Firebase,
+        pebblePins: PebblePins,
     ) = PebbleMessageHandler(
         watchService = watchServiceLogic,
         analytics = firebase,
+        pebblePins = pebblePins,
     )
+
+    @Provides
+    fun providesPebblePins(
+        @ApplicationContext context: Context,
+        watchServiceLogic: WatchServiceLogic,
+    ) = PebblePins(context, watchServiceLogic)
 
     @Provides
     @Singleton

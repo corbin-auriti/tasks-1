@@ -33,7 +33,10 @@ import org.tasks.tasklist.SectionedDataSource
 import org.tasks.tasklist.UiItem
 import org.tasks.themes.ColorProvider
 import org.tasks.time.DateTimeUtils2.currentTimeMillis
+import org.tasks.pebble.PebbleProtocol.PIN_MODE_MOST_DUE
+import org.tasks.pebble.PebbleProtocol.PIN_MODE_RANDOM
 import org.tasks.time.startOfDay
+import kotlin.random.Random
 
 class WatchServiceLogic(
     private val taskDao: TaskDao,
@@ -142,6 +145,35 @@ class WatchServiceLogic(
 
     suspend fun toggleGroup(value: Long, collapsed: Boolean) {
         taskSaver.setCollapsed(value, collapsed)
+    }
+
+    // Pebble timeline pins: a small stable-for-the-day selection.
+    // MOST_DUE ranks overdue first and fills up with the soonest upcoming;
+    // RANDOM picks a new set each day from everything unfinished.
+    override suspend fun getPinnableTasks(mode: Int): List<WatchPinTask> {
+        if (mode != PIN_MODE_MOST_DUE && mode != PIN_MODE_RANDOM) return emptyList()
+        val preferences = WatchQueryPreferences(appPreferences, false, false)
+        val filter = resolveFilter(null)
+        val tasks = taskDao
+            .fetchTasks(preferences, filter)
+            .filter { !it.task.isCompleted && !it.task.isHidden }
+        val selected = when (mode) {
+            PIN_MODE_MOST_DUE -> {
+                val now = currentTimeMillis()
+                val dated = tasks.filter { it.task.dueDate > 0 }
+                (dated.filter { it.task.dueDate < now }.sortedBy { it.task.dueDate } +
+                        dated.filter { it.task.dueDate >= now }.sortedBy { it.task.dueDate })
+                    .take(3)
+            }
+            else -> tasks.shuffled(Random(currentTimeMillis().startOfDay())).take(3)
+        }
+        return selected.map {
+            WatchPinTask(
+                id = it.task.id,
+                title = it.task.title ?: "",
+                dueDate = it.task.dueDate,
+            )
+        }
     }
 
     override suspend fun getLists(

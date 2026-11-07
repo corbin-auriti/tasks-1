@@ -73,6 +73,7 @@ import kotlin.math.ceil
 class PebbleMessageHandler(
     private val watchService: WatchService,
     private val analytics: Analytics,
+    private val pebblePins: PebblePins,
 ) {
     companion object {
         private const val CHUNK_DELAY_MS = 100L
@@ -168,6 +169,10 @@ class PebbleMessageHandler(
                     MSG_GET_TASK -> handleGetTask(context, data, protocolTxn)
                     MSG_SAVE_TASK -> handleSaveTask(context, data, protocolTxn)
                     MSG_GET_TASK_COUNT -> handleGetTaskCount(context, data, protocolTxn)
+                    PebbleProtocol.MSG_SET_PIN_MODE -> pebblePins.push(
+                        (data[PebbleProtocol.KEY_PIN_MODE] as? Long)?.toInt()
+                                ?: PebbleProtocol.PIN_MODE_OFF
+                    )
                     else -> Logger.w("PEBBLE") { "Unknown Pebble message type: $msgType" }
                 }
             } catch (e: Exception) {

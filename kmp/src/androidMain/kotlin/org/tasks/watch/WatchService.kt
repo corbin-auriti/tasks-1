@@ -35,4 +35,8 @@ interface WatchService {
         showHidden: Boolean,
         showCompleted: Boolean,
     ): WatchTaskCount
+
+    // Pebble timeline pins -- off by default until a Pebble is configured
+    // through the watch app's settings
+    suspend fun getPinnableTasks(mode: Int): List<WatchPinTask> = emptyList()
 }
