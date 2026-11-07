@@ -19,6 +19,39 @@ static uint32_t s_received_mask = 0;
 static uint8_t s_request_txn = 0;
 static AppTimer *s_timer = NULL;
 
+static void chunk_timeout_handler(void *data);
+
+// The task list's initial page request can still be sitting in the outbox
+// when the focus window loads, so the first send comes back busy -- retry
+// briefly instead of declaring the set empty
+#define FOCUS_SEND_RETRIES 12
+static AppTimer *s_send_timer = NULL;
+static int s_send_retries = 0;
+
+static void focus_send_attempt(void);
+
+static void focus_send_retry(void *data) {
+    s_send_timer = NULL;
+    focus_send_attempt();
+}
+
+static void focus_send_attempt(void) {
+    if (protocol_send_get_focus()) {
+        s_send_retries = 0;
+        s_request_txn = protocol_get_active_transaction_id();
+        s_expected_chunks = 0;
+        s_received_mask = 0;
+        if (s_timer) app_timer_cancel(s_timer);
+        s_timer = app_timer_register(5000, chunk_timeout_handler, NULL);
+    } else if (s_send_retries < FOCUS_SEND_RETRIES) {
+        s_send_retries++;
+        s_send_timer = app_timer_register(400, focus_send_retry, NULL);
+    } else {
+        s_send_retries = 0;
+        chunk_timeout_handler(NULL);
+    }
+}
+
 static void chunk_timeout_handler(void *data) {
     s_timer = NULL;
     if (s_loading) {
@@ -88,20 +121,18 @@ static void window_load(Window *window) {
     layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
     layer_set_hidden(text_layer_get_layer(s_loading_layer), false);
 
-    if (protocol_send_get_focus()) {
-        s_request_txn = protocol_get_active_transaction_id();
-        s_expected_chunks = 0;
-        s_received_mask = 0;
-        s_timer = app_timer_register(5000, chunk_timeout_handler, NULL);
-    } else {
-        chunk_timeout_handler(NULL);
-    }
+    s_send_retries = 0;
+    focus_send_attempt();
 }
 
 static void window_unload(Window *window) {
     if (s_timer) {
         app_timer_cancel(s_timer);
         s_timer = NULL;
+    }
+    if (s_send_timer) {
+        app_timer_cancel(s_send_timer);
+        s_send_timer = NULL;
     }
     menu_layer_destroy(s_menu_layer);
     text_layer_destroy(s_loading_layer);
