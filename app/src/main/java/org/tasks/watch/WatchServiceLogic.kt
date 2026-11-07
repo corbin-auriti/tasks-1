@@ -161,8 +161,11 @@ class WatchServiceLogic(
             PIN_MODE_MOST_DUE -> {
                 val now = currentTimeMillis()
                 val dated = tasks.filter { it.task.dueDate > 0 }
+                // Overdue first, then the soonest upcoming, then anything
+                // undated -- a list without due dates still gets a set
                 (dated.filter { it.task.dueDate < now }.sortedBy { it.task.dueDate } +
-                        dated.filter { it.task.dueDate >= now }.sortedBy { it.task.dueDate })
+                        dated.filter { it.task.dueDate >= now }.sortedBy { it.task.dueDate } +
+                        tasks.filter { it.task.dueDate <= 0 })
                     .take(3)
             }
             else -> tasks.shuffled(Random(currentTimeMillis().startOfDay())).take(3)
