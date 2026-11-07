@@ -173,6 +173,7 @@ class PebbleMessageHandler(
                         (data[PebbleProtocol.KEY_PIN_MODE] as? Long)?.toInt()
                                 ?: PebbleProtocol.PIN_MODE_OFF
                     )
+                    PebbleProtocol.MSG_GET_FOCUS -> handleGetFocus(context, data, transactionId)
                     else -> Logger.w("PEBBLE") { "Unknown Pebble message type: $msgType" }
                 }
             } catch (e: Exception) {
@@ -331,6 +332,41 @@ class PebbleMessageHandler(
     // watch build reads (protocol_tuple_value accepts either)
     private fun intTuple(small: Boolean, value: Int): Any =
         if (small) PebbleProtocol.SmallInt(value) else value
+
+    private suspend fun handleGetFocus(
+        context: Context,
+        data: Map<Int, Any>,
+        transactionId: Int,
+    ) {
+        val small = PebbleProtocol.isSmallMode(data)
+        val chunkSize = if (small) PebbleProtocol.SMALL_CHUNK_SIZE else CHUNK_SIZE
+        val tasks = watchService.getPinnableTasks(pebblePins.mode())
+        val chunkCount = ceil(tasks.size.toDouble() / chunkSize).toInt().coerceAtLeast(1)
+        for (chunkIndex in 0 until chunkCount) {
+            val chunkItems = tasks.subList(
+                chunkIndex * chunkSize,
+                ((chunkIndex + 1) * chunkSize).coerceAtMost(tasks.size),
+            )
+            val dict = chunkHeader(small, PebbleProtocol.RESP_FOCUS, transactionId, tasks.size, chunkIndex, chunkCount)
+            chunkItems.forEachIndexed { index, task ->
+                val base = KEY_ITEM_BASE + index * ITEM_STRIDE
+                val (high, low) = PebbleProtocol.splitLong(task.id)
+                dict[base + ITEM_ID_HIGH] = high
+                dict[base + ITEM_ID_LOW] = low
+                dict[base + ITEM_TYPE] = intTuple(small, TYPE_TASK)
+                dict[base + ITEM_TITLE] = truncateTaskTitle(task.title, data)
+                dict[base + ITEM_PRIORITY] = intTuple(small, 3)
+                dict[base + ITEM_COMPLETED] = intTuple(small, 0)
+                dict[base + ITEM_INDENT] = intTuple(small, 0)
+                dict[base + ITEM_COLLAPSED] = intTuple(small, 0)
+                dict[base + ITEM_NUM_SUBTASKS] = intTuple(small, 0)
+            }
+            PebbleProtocol.sendToPebble(context, dict, transactionId)
+            if (chunkIndex < chunkCount - 1) {
+                delay(if (small) SMALL_CHUNK_DELAY_MS else CHUNK_DELAY_MS)
+            }
+        }
+    }
 
     private fun chunkHeader(
         small: Boolean,

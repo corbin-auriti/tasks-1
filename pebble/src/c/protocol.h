@@ -78,6 +78,9 @@
 // relays the chosen mode)
 #define MSG_SET_PIN_MODE    9
 
+// Focus screen: 3 pinned tasks shown on launch
+#define MSG_GET_FOCUS      10
+
 // Phone -> Watch response types
 #define RESP_TASKS          101
 #define RESP_COMPLETE_TASK  102
@@ -87,6 +90,7 @@
 #define RESP_SAVE_TASK      106
 #define RESP_TASK_COUNT     107
 #define RESP_TOGGLE_LIST    108
+#define RESP_FOCUS           110
 
 // Push notification
 #define MSG_REFRESH         200
@@ -257,6 +261,7 @@ bool protocol_send_toggle_list(const char *id, bool collapsed);
 void protocol_send_get_task(uint32_t id_high, uint32_t id_low);
 void protocol_send_save_task(const char *title, const char *filter);
 bool protocol_send_set_pin_mode(uint8_t mode);
+bool protocol_send_get_focus(void);
 
 // Chunk parsing -- returns number of items parsed
 int protocol_parse_items(DictionaryIterator *iter, UiItem *items, int max_items);

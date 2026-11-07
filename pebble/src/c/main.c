@@ -12,6 +12,8 @@
 #include "task_list_window.h"
 #include "menu_window.h"
 #include "task_view_window.h"
+#include "focus_window.h"
+#include "settings_window.h"
 
 static void inbox_received_handler(DictionaryIterator *iter, void *context) {
     Tuple *msg_type_t = dict_find(iter, KEY_MSG_TYPE);
@@ -39,6 +41,9 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
             break;
         case RESP_SAVE_TASK:
             task_list_handle_save_response(iter);
+            break;
+        case RESP_FOCUS:
+            focus_window_handle_response(iter);
             break;
         case RESP_TOGGLE_GROUP:
             task_list_handle_toggle_response(iter);
@@ -107,8 +112,11 @@ static void init(void) {
         .pebble_app_connection_handler = bluetooth_handler,
     });
 
-    // Show task list on launch
+    // Show task list on launch, with the focus set on top when Pins is on
     task_list_window_push();
+    if (settings_get_pin_mode() != PIN_MODE_OFF) {
+        focus_window_push();
+    }
 }
 
 static void deinit(void) {

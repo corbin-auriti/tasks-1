@@ -232,6 +232,12 @@ bool settings_get_show_hidden(void) {
     return false;
 }
 
+int settings_get_pin_mode(void) {
+    if (persist_exists(PERSIST_PIN_MODE))
+        return (int)persist_read_int(PERSIST_PIN_MODE);
+    return PIN_MODE_OFF;
+}
+
 bool settings_get_show_completed(void) {
     if (persist_exists(PERSIST_SHOW_COMPLETED))
         return persist_read_bool(PERSIST_SHOW_COMPLETED);

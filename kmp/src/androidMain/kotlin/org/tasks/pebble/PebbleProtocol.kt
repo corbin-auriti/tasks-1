@@ -129,6 +129,7 @@ object PebbleProtocol {
 
     // Timeline pin prefs (watch -> phone)
     const val MSG_SET_PIN_MODE: Int = 9
+    const val MSG_GET_FOCUS: Int = 10
     const val KEY_PIN_MODE = 33
     const val PIN_MODE_OFF = 0
     const val PIN_MODE_MOST_DUE = 1
@@ -143,6 +144,7 @@ object PebbleProtocol {
     const val RESP_SAVE_TASK: Int = 106
     const val RESP_TASK_COUNT: Int = 107
     const val RESP_TOGGLE_LIST: Int = 108
+    const val RESP_FOCUS: Int = 110
 
     // Push notification
     const val MSG_REFRESH: Int = 200
